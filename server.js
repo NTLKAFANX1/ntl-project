@@ -8,16 +8,16 @@ const bodyParser = require("body-parser");
 const app = express();
 app.use(bodyParser.json());
 
-// مكان حفظ الملفات المرفوعة
+// إعداد رفع الملفات
 const upload = multer({ dest: "uploads/" });
 
-// ضع هنا مفتاح OpenAI الخاص بك
-const OPENAI_API_KEY = "ضع المفتاح هنا";
+// مفتاح OpenAI من متغير البيئة
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-// قائمة البوتات المخزنة مؤقتاً
+// قائمة البوتات
 let bots = [];
 
-// صفحة الويب الرئيسية – واجهة فخمة
+// واجهة الويب
 app.get("/", (req, res) => {
   res.send(`
   <!DOCTYPE html>
@@ -33,9 +33,6 @@ app.get("/", (req, res) => {
       button { padding:10px 20px; margin:5px; border:none; border-radius:5px; cursor:pointer; background:#00ffff; color:#000; font-weight:bold; }
       pre { background:#333; padding:10px; border-radius:5px; overflow-x:auto; }
       .bot { background:#222; padding:10px; margin:10px 0; border-radius:5px; }
-      .tabs { display:flex; margin-bottom:10px; }
-      .tab { padding:10px 20px; margin-right:5px; cursor:pointer; background:#333; border-radius:5px; }
-      .tab.active { background:#00ffff; color:#000; font-weight:bold; }
     </style>
   </head>
   <body>
@@ -111,7 +108,7 @@ app.get("/", (req, res) => {
   `);
 });
 
-// توليد كود البوت باستخدام OpenAI
+// توليد كود البوت
 app.post("/generate", async (req, res) => {
   const userInput = req.body.text;
   try {
@@ -137,14 +134,11 @@ app.post("/generate", async (req, res) => {
 });
 
 // رفع الملفات للبوتات
-app.post("/upload", upload.single("file"), (req, res) => {
+app.post("/upload", multer({ dest: "uploads/" }).single("file"), (req, res) => {
   const botIndex = req.body.botIndex;
-  const bot = bots[botIndex];
-  if(bot) {
-    const filePath = path.join(__dirname, "uploads", req.file.originalname);
-    fs.renameSync(req.file.path, filePath);
-    res.send({ success:true, path:filePath });
-  } else res.status(400).send({ success:false, message:"بوت غير موجود" });
+  const filePath = path.join(__dirname, "uploads", req.file.originalname);
+  fs.renameSync(req.file.path, filePath);
+  res.send({ success:true, path:filePath });
 });
 
 // تشغيل السيرفر
