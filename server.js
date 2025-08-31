@@ -4,21 +4,57 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const bodyParser = require("body-parser");
+const { Client, GatewayIntentBits } = require("discord.js");
 
 const app = express();
 app.use(bodyParser.json());
 
-// إعداد رفع الملفات
 const upload = multer({ dest: "uploads/" });
-
-// مفتاح OpenAI من متغير البيئة
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-// قائمة البوتات
-let bots = [];
+// تخزين البوتات
+let bots = []; // { name, token, client, online }
+
+// إضافة بوت جديد وتشغيله فورًا
+function addBot(name, token) {
+  const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+  client.login(token)
+    .then(() => console.log(`${name} is online!`))
+    .catch(err => console.log(`Failed to login ${name}: ${err}`));
+
+  const botObj = { name, token, client, online: false };
+  bots.push(botObj);
+
+  client.on("ready", () => {
+    console.log(`${name} logged in as ${client.user.tag}`);
+    botObj.online = true;
+  });
+}
+
+// إيقاف البوت
+function stopBot(token) {
+  const botObj = bots.find(b => b.token === token);
+  if(botObj) {
+    botObj.client.destroy();
+    botObj.online = false;
+    console.log(`${botObj.name} stopped`);
+  }
+}
 
 // واجهة الويب
 app.get("/", (req, res) => {
+  let botHTML = bots.map((b, i) => `
+    <div style="background:#222; padding:10px; margin:10px 0; border-radius:5px;">
+      <h3>${b.name} - ${b.online ? "أونلاين ✅" : "أوفلاين ❌"}</h3>
+      <textarea id="input${i}" rows="4" placeholder="اكتب أي شيء عن البوت"></textarea><br>
+      <button onclick="generateCode(${i})">توليد كود</button>
+      <button onclick="document.getElementById('file${i}').click()">رفع ملف</button>
+      <button onclick="toggleBot(${i})">${b.online ? "إيقاف" : "تشغيل"}</button>
+      <pre id="result${i}"></pre>
+      <input type="file" id="file${i}" style="display:none"/>
+    </div>
+  `).join("\n");
+
   res.send(`
   <!DOCTYPE html>
   <html lang="ar">
@@ -29,52 +65,29 @@ app.get("/", (req, res) => {
     <style>
       body { font-family: monospace; background: #1e1e1e; color: #fff; padding:20px; }
       h1 { text-align:center; color:#00ffff; }
-      textarea { width:100%; background:#333; color:#fff; border:none; padding:10px; border-radius:5px; }
+      input, textarea { width:100%; background:#333; color:#fff; border:none; padding:10px; border-radius:5px; margin:5px 0; }
       button { padding:10px 20px; margin:5px; border:none; border-radius:5px; cursor:pointer; background:#00ffff; color:#000; font-weight:bold; }
       pre { background:#333; padding:10px; border-radius:5px; overflow-x:auto; }
-      .bot { background:#222; padding:10px; margin:10px 0; border-radius:5px; }
     </style>
   </head>
   <body>
     <h1>لوحة بوتات ديسكورد الذكية</h1>
-    
     <div>
       <input id="botName" placeholder="اسم البوت" />
       <input id="botToken" placeholder="توكن البوت" />
-      <button onclick="addBot()">إضافة بوت</button>
+      <button onclick="addBotUI()">إضافة بوت</button>
+    </div>
+    <div id="botList">
+      ${botHTML}
     </div>
 
-    <div id="botList"></div>
-
     <script>
-      let bots = [];
-
-      function renderBots() {
-        const container = document.getElementById('botList');
-        container.innerHTML = '';
-        bots.forEach((bot, index) => {
-          const div = document.createElement('div');
-          div.className = 'bot';
-          div.innerHTML = \`
-            <h3>\${bot.name}</h3>
-            <p>توكن: \${bot.token}</p>
-            <textarea id="input\${index}" rows="4" placeholder="اكتب أي شيء عن البوت"></textarea><br>
-            <button onclick="generateCode(\${index})">توليد كود</button>
-            <button onclick="uploadFile(\${index})">رفع ملف</button>
-            <pre id="result\${index}"></pre>
-            <input type="file" id="file\${index}" style="display:none"/>
-          \`;
-          container.appendChild(div);
-        });
-      }
-
-      function addBot() {
+      async function addBotUI() {
         const name = document.getElementById('botName').value;
         const token = document.getElementById('botToken').value;
-        if(name && token) {
-          bots.push({name, token});
-          renderBots();
-        } else alert("أدخل اسم وتوكن البوت!");
+        if(!name || !token) return alert("أدخل اسم وتوكن البوت!");
+        await fetch('/add-bot', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, token}) });
+        location.reload();
       }
 
       async function generateCode(index) {
@@ -88,24 +101,34 @@ app.get("/", (req, res) => {
         document.getElementById('result'+index).textContent = data.code;
       }
 
-      function uploadFile(index) {
-        const fileInput = document.getElementById('file'+index);
-        fileInput.click();
-        fileInput.onchange = async () => {
+      function toggleBot(index) {
+        const btn = document.querySelectorAll('button')[index*3 + 2]; 
+        const token = btn.getAttribute('data-token');
+        fetch('/toggle-bot', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({index}) })
+          .then(()=> location.reload());
+      }
+
+      // رفع الملفات
+      document.querySelectorAll('input[type=file]').forEach((fileInput, i)=>{
+        fileInput.onchange = async ()=>{
           const formData = new FormData();
           formData.append('file', fileInput.files[0]);
-          formData.append('botIndex', index);
-          await fetch('/upload', {
-            method: 'POST',
-            body: formData
-          });
-          alert('تم رفع الملف للبوت: ' + bots[index].name);
-        }
-      }
+          formData.append('botIndex', i);
+          await fetch('/upload', { method:'POST', body:formData });
+          alert('تم رفع الملف!');
+        };
+      });
     </script>
   </body>
   </html>
   `);
+});
+
+// إضافة بوت من الواجهة
+app.post("/add-bot", (req, res) => {
+  const { name, token } = req.body;
+  addBot(name, token);
+  res.send({ success:true });
 });
 
 // توليد كود البوت
@@ -133,8 +156,18 @@ app.post("/generate", async (req, res) => {
   }
 });
 
-// رفع الملفات للبوتات
-app.post("/upload", multer({ dest: "uploads/" }).single("file"), (req, res) => {
+// إيقاف / تشغيل البوت
+app.post("/toggle-bot", (req, res) => {
+  const { index } = req.body;
+  const bot = bots[index];
+  if(!bot) return res.send({ success:false });
+  if(bot.online) stopBot(bot.token);
+  else addBot(bot.name, bot.token);
+  res.send({ success:true });
+});
+
+// رفع الملفات
+app.post("/upload", upload.single("file"), (req, res) => {
   const botIndex = req.body.botIndex;
   const filePath = path.join(__dirname, "uploads", req.file.originalname);
   fs.renameSync(req.file.path, filePath);
