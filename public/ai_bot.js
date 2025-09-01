@@ -1,47 +1,20 @@
-// ai_bot.js
-const readline = require('readline');
-const { OpenAI } = require('openai');
-require('dotenv').config();
+const express = require('express');
+const { spawn } = require('child_process');
+const app = express();
+app.use(express.json());
+app.use(express.static('public'));
 
-if (!process.env.OPENAI_API_KEY) {
-  console.error("❌ يجب تعيين مفتاح OpenAI في المتغير OPENAI_API_KEY");
-  process.exit(1);
-}
-
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
+app.post('/ask', async (req, res) => {
+  const question = req.body.question;
+  // نفترض إن llama.cpp شغّال على localhost:8080 يدعم OpenAI endpoint
+  const { default: fetch } = await import('node-fetch');
+  const apiRes = await fetch('http://localhost:8080/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: [{ role: "user", content: question }], model: "llama2" })
+  });
+  const json = await apiRes.json();
+  res.json({ answer: json.choices[0].message.content });
 });
 
-console.log("🤖 الذكاء الاصطناعي جاهز! اكتب سؤالك بالبرمجة أو أي استفسار:");
-
-async function askAI(question) {
-  try {
-    const response = await client.responses.create({
-      model: 'gpt-5',
-      input: question
-    });
-    console.log("\n💡 إجابة AI:");
-    console.log(response.output_text || "❌ لم يتم الرد");
-    promptUser();
-  } catch (err) {
-    console.error("❌ حدث خطأ:", err.message);
-    promptUser();
-  }
-}
-
-function promptUser() {
-  rl.question("\nسؤال: ", async (input) => {
-    if (input.toLowerCase() === 'exit' || input.toLowerCase() === 'quit') {
-      console.log("👋 تم إغلاق الذكاء الاصطناعي. باي!");
-      rl.close();
-      process.exit(0);
-    } else {
-      await askAI(input);
-    }
-  });
-}
-
-promptUser();
+app.listen(process.env.PORT || 3000, () => console.log('AI server running...'));
