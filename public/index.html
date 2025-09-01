@@ -3,21 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>واجهة البوت</title>
+<title>واجهة البوت الذكية</title>
 <style>
-body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; margin-top: 50px; background: #111; color: #eee; }
-textarea { width: 90%; max-width: 600px; height: 200px; background: #222; color: #0f0; padding: 15px; border-radius: 8px; border: none; font-family: monospace; font-size: 14px; }
-button { margin: 10px; padding: 10px 20px; border: none; border-radius: 5px; background: #0f0; color: #000; font-weight: bold; cursor: pointer; }
-pre { background: #222; color: #0f0; padding: 20px; border-radius: 8px; width: 90%; max-width: 600px; overflow-x: auto; }
+body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #0f0f0f, #1a1a1a); color: #eee; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+h1 { color: #0f0; margin-bottom: 20px; }
+textarea { width: 90%; max-width: 700px; height: 220px; background: #222; color: #0f0; padding: 15px; border-radius: 10px; border: 1px solid #0f0; font-family: monospace; font-size: 14px; resize: none; }
+button { margin: 10px; padding: 12px 25px; border: none; border-radius: 8px; background: #0f0; color: #000; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+button:hover { background: #0a0; transform: scale(1.05); }
+pre { background: #111; color: #0f0; padding: 20px; border-radius: 10px; width: 90%; max-width: 700px; overflow-x: auto; min-height: 80px; margin-top: 10px; }
+.ai-section { margin-top: 30px; width: 90%; max-width: 700px; display: flex; flex-direction: column; }
+.ai-section input { padding: 10px; border-radius: 8px; border: 1px solid #0f0; background: #222; color: #0f0; margin-bottom: 10px; }
 </style>
 </head>
 <body>
 
-<h1>واجهة البوت</h1>
+<h1>واجهة البوت الذكية</h1>
 <textarea id="botCode" placeholder="ضع كود البوت هنا..."></textarea>
-<button onclick="copyCode()">نسخ التعليمات البرمجية</button>
-<button onclick="saveAndRun()">تشغيل البوت</button>
-<pre id="log"></pre>
+<div>
+  <button onclick="copyCode()">نسخ التعليمات البرمجية</button>
+  <button onclick="saveAndRun()">تشغيل البوت</button>
+</div>
+<pre id="log">سجل العمليات يظهر هنا...</pre>
+
+<div class="ai-section">
+  <input id="aiQuestion" placeholder="اسأل الذكاء الاصطناعي عن أي كود أو سؤال..." />
+  <button onclick="askAI()">اسأل الذكاء الاصطناعي</button>
+  <pre id="aiAnswer">إجابة الذكاء الاصطناعي ستظهر هنا...</pre>
+</div>
 
 <script>
 function copyCode() {
@@ -36,8 +48,18 @@ async function saveAndRun() {
   const data = await res.json();
   document.getElementById('log').innerText = data.message;
 
-  // تشغيل البوت بعد الحفظ
   await fetch('/run', { method: 'POST' });
+}
+
+async function askAI() {
+  const question = document.getElementById('aiQuestion').value;
+  const res = await fetch('/ask', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question })
+  });
+  const data = await res.json();
+  document.getElementById('aiAnswer').innerText = data.answer;
 }
 </script>
 
