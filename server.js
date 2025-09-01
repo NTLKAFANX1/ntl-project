@@ -1,15 +1,15 @@
-
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require('openai');
 
 const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
 let client;
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 app.post('/start', async (req, res) => {
   const { token, status, activity } = req.body;
@@ -48,12 +48,11 @@ app.post('/file', (req, res) => {
 app.post('/ask', async (req, res) => {
   const { question } = req.body;
   try {
-    const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
-    const completion = await openai.createChatCompletion({
-      model: "gpt-4",
-      messages: [{ role: "user", content: question }]
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{ role: 'user', content: question }]
     });
-    res.json({ answer: completion.data.choices[0].message.content });
+    res.json({ answer: completion.choices[0].message.content });
   } catch (err) {
     console.error(err);
     res.json({ answer: '❌ فشل في الاتصال بـ OpenAI، تأكد من المفتاح.' });
