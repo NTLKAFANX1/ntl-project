@@ -2,29 +2,63 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>تشغيل بوت Discord</title>
+  <title>تشغيل وبرمجة بوت Discord</title>
   <style>
     body { font-family: sans-serif; background:#111; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; }
-    input { padding:10px; width:300px; margin:10px; border-radius:5px; border:none; }
+    input, select, textarea { padding:10px; width:300px; margin:10px; border-radius:5px; border:none; }
     button { padding:10px 20px; border:none; border-radius:5px; background:#00ff99; color:#000; cursor:pointer; }
+    textarea { height: 100px; }
   </style>
 </head>
 <body>
-  <h1>تشغيل بوت Discord</h1>
-  <input type="text" id="token" placeholder="ضع توكن البوت هنا">
+  <h1>تشغيل وبرمجة بوت Discord</h1>
+  <input type="text" id="token" placeholder="توكن البوت">
+  <select id="status">
+    <option value="online">🟢 متصل</option>
+    <option value="idle">🌙 غير متاح</option>
+    <option value="dnd">⛔ عدم الإزعاج</option>
+    <option value="invisible">غير مرئي</option>
+  </select>
+  <input type="text" id="activity" placeholder="النشاط (مثلاً: يلعب Minecraft)">
   <button onclick="startBot()">تشغيل البوت</button>
+
+  <hr style="width: 80%; margin: 20px 0; border: 1px solid #333;">
+
+  <h2>تحديث الحالة أثناء التشغيل</h2>
+  <select id="newStatus">
+    <option value="online">🟢 متصل</option>
+    <option value="idle">🌙 غير متاح</option>
+    <option value="dnd">⛔ عدم الإزعاج</option>
+    <option value="invisible">غير مرئي</option>
+  </select>
+  <input type="text" id="newActivity" placeholder="نشاط جديد">
+  <button onclick="updateStatus()">تحديث الحالة</button>
 
   <script>
     async function startBot() {
         const token = document.getElementById('token').value;
+        const status = document.getElementById('status').value;
+        const activity = document.getElementById('activity').value;
         if(!token) return alert('ضع التوكن أولاً!');
         
         const response = await fetch('/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token })
+            body: JSON.stringify({ token, status, activity })
         });
 
+        const data = await response.json();
+        alert(data.message);
+    }
+
+    async function updateStatus() {
+        const status = document.getElementById('newStatus').value;
+        const activity = document.getElementById('newActivity').value;
+        const response = await fetch('/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status, activity })
+        });
         const data = await response.json();
         alert(data.message);
     }
