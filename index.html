@@ -45,6 +45,9 @@ button.run:hover,button.send:hover{transform:scale(1.05);}
 
 <section id="editor">
 <h2>محرر البوت</h2>
+<h3>توكن البوت</h3>
+<input type="text" id="botToken" placeholder="ضع توكن البوت هنا">
+<button class="run" onclick="runBot()">تشغيل البوت</button>
 <textarea id="codeArea">// ضع كود البوت هنا</textarea>
 <button class="run" onclick="runCode()">تشغيل الكود</button>
 </section>
@@ -105,6 +108,20 @@ async function sendMessage(){
   chat.appendChild(aiMsg);
   chat.scrollTop=chat.scrollHeight;
   document.getElementById('userInput').value='';
+}
+
+// تشغيل البوت
+function runBot(){
+  const token = document.getElementById('botToken').value.trim();
+  if(!token) return showToast("ضع توكن البوت أولاً");
+
+  fetch('/start-bot', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({token})
+  }).then(res => res.json())
+    .then(data => showToast(data.message))
+    .catch(()=> showToast("حدث خطأ عند تشغيل البوت"));
 }
 </script>
 
