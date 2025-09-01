@@ -17,11 +17,6 @@
 <button onclick="runCode()">تشغيل الكود</button>
 <div id="codeStatus"></div>
 
-<h2>رفع ملفات البوت</h2>
-<input type="file" id="botFile">
-<button onclick="uploadFile()">رفع الملف</button>
-<div id="uploadStatus"></div>
-
 <script>
 function startBot(){
   const token = document.getElementById('botToken').value.trim();
@@ -39,16 +34,6 @@ function runCode(){
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({code})
   }).then(r=>r.json()).then(d=> document.getElementById('codeStatus').innerText=d.message);
-}
-
-function uploadFile(){
-  const file = document.getElementById('botFile').files[0];
-  if(!file) return;
-  const formData = new FormData();
-  formData.append('file', file);
-  fetch('/upload',{method:'POST', body: formData})
-    .then(r=>r.json())
-    .then(d=> document.getElementById('uploadStatus').innerText = d.message);
 }
 </script>
 
