@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
-const OpenAI = require('openai');
+const fetch = require('node-fetch'); // مهم عشان نستعمل أي API خارجي حتى لو محلي
 
 const app = express();
 app.use(express.json());
@@ -11,7 +11,7 @@ app.use(express.static('public'));
 
 let client;
 
-// تشغيل البوت مع التوكن والحالة والنشاط
+// ✅ تشغيل البوت
 app.post('/start', async (req, res) => {
   const { token, status, activity } = req.body;
   if (!token) return res.json({ message: '❌ يرجى إدخال التوكن' });
@@ -33,7 +33,7 @@ app.post('/start', async (req, res) => {
   }
 });
 
-// حفظ الملفات
+// ✅ حفظ ملف
 app.post('/file', (req, res) => {
   const { name, content } = req.body;
   const dir = path.dirname(name);
@@ -42,11 +42,11 @@ app.post('/file', (req, res) => {
   res.json({ message: '✅ تم حفظ الملف' });
 });
 
-// تشغيل البوت من الملف المحفوظ
+// ✅ تشغيل البوت من الملف
 app.post('/run', (req, res) => {
   exec('node bots/bot.js', (error, stdout, stderr) => {
     if (error) {
-      console.error(`خطأ: ${error.message}`);
+      console.error(`❌ خطأ: ${error.message}`);
       return res.json({ message: '❌ فشل تشغيل البوت' });
     }
     if (stderr) console.error(`STDERR: ${stderr}`);
@@ -55,23 +55,31 @@ app.post('/run', (req, res) => {
   });
 });
 
-// واجهة OpenAI باستخدام الطريقة الجديدة بدون Configuration
+// ✅ ذكاء اصطناعي محلي (بديل OpenAI)
 app.post('/ask', async (req, res) => {
   const { question } = req.body;
   try {
-    const clientAI = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const response = await clientAI.responses.create({
-      model: 'gpt-5',
-      input: question
+    const response = await fetch('http://localhost:8080/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama2', // غير الاسم حسب اللي عندك
+        messages: [
+          { role: 'user', content: question }
+        ]
+      })
     });
-    res.json({ answer: response.output_text || '❌ لم يتم الرد' });
+
+    const data = await response.json();
+    const answer = data?.choices?.[0]?.message?.content || '❌ لم يتم الرد';
+    res.json({ answer });
   } catch (err) {
     console.error(err);
-    res.json({ answer: '❌ فشل في الاتصال بـ OpenAI، تأكد من المفتاح.' });
+    res.json({ answer: '❌ فشل في الاتصال بالنموذج المحلي، تأكد من الرابط والتشغيل' });
   }
 });
 
+// ✅ تشغيل السيرفر
 app.listen(process.env.PORT || 3000, () => {
   console.log('🚀 Server running...');
 });
-      
