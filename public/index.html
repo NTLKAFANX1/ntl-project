@@ -26,9 +26,9 @@ pre { background: #111; color: #0f0; padding: 20px; border-radius: 10px; width: 
 <pre id="log">سجل العمليات يظهر هنا...</pre>
 
 <div class="ai-section">
-  <input id="aiQuestion" placeholder="اسأل الذكاء الاصطناعي المحلي عن أي كود أو سؤال..." />
-  <button onclick="askAI()">استفسر الآن</button>
-  <pre id="aiAnswer">إجابة النظام المحلي ستظهر هنا...</pre>
+  <input id="aiQuestion" placeholder="اسأل الذكاء الاصطناعي عن أي كود أو سؤال..." />
+  <button onclick="askAI()">اسأل الذكاء الاصطناعي</button>
+  <pre id="aiAnswer">إجابة الذكاء الاصطناعي ستظهر هنا...</pre>
 </div>
 
 <script>
@@ -53,16 +53,13 @@ async function saveAndRun() {
 
 async function askAI() {
   const question = document.getElementById('aiQuestion').value;
-  document.getElementById('aiAnswer').innerText = "⏳ جاري المعالجة...";
-
   const res = await fetch('/ask', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ question })
   });
-
   const data = await res.json();
-  document.getElementById('aiAnswer').innerText = data.answer || '❌ لم يتم الرد.';
+  document.getElementById('aiAnswer').innerText = data.answer;
 }
 </script>
 
