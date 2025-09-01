@@ -1,41 +1,33 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>بوت مباشر</title>
+<title>تشغيل بوت Discord</title>
+<style>
+  body { font-family: sans-serif; background:#111; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; }
+  input { padding:10px; width:300px; margin:10px; border-radius:5px; border:none; }
+  button { padding:10px 20px; border:none; border-radius:5px; background:#00ff99; color:#000; cursor:pointer; }
+</style>
 </head>
 <body>
-
-<h2>تشغيل البوت</h2>
-<input type="text" id="botToken" placeholder="توكن البوت">
+<h1>تشغيل بوت Discord</h1>
+<input type="text" id="token" placeholder="ضع توكن البوت هنا">
 <button onclick="startBot()">تشغيل البوت</button>
-<div id="botStatus"></div>
-
-<h2>تشغيل كود JS</h2>
-<textarea id="codeArea">// ضع كود JS هنا</textarea>
-<button onclick="runCode()">تشغيل الكود</button>
-<div id="codeStatus"></div>
 
 <script>
-function startBot(){
-  const token = document.getElementById('botToken').value.trim();
-  fetch('/start-bot',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({token})
-  }).then(r=>r.json()).then(d=> document.getElementById('botStatus').innerText = d.message);
-}
+async function startBot() {
+    const token = document.getElementById('token').value;
+    if(!token) return alert('ضع التوكن أولاً!');
+    
+    const response = await fetch('https://YOUR-RENDER-SERVER.onrender.com/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+    });
 
-function runCode(){
-  const code = document.getElementById('codeArea').value;
-  fetch('/run-code',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({code})
-  }).then(r=>r.json()).then(d=> document.getElementById('codeStatus').innerText=d.message);
+    const data = await response.json();
+    alert(data.message);
 }
 </script>
-
 </body>
 </html>
