@@ -1,47 +1,33 @@
-import express from 'express';
-import cors from 'cors';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { Client, GatewayIntentBits } from 'discord.js';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>تشغيل بوت Discord</title>
+<style>
+  body { font-family: sans-serif; background:#111; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; }
+  input { padding:10px; width:300px; margin:10px; border-radius:5px; border:none; }
+  button { padding:10px 20px; border:none; border-radius:5px; background:#00ff99; color:#000; cursor:pointer; }
+</style>
+</head>
+<body>
+<h1>تشغيل بوت Discord</h1>
+<input type="text" id="token" placeholder="ضع توكن البوت هنا">
+<button onclick="startBot()">تشغيل البوت</button>
 
-const app = express();
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
+<script>
+async function startBot() {
+    const token = document.getElementById('token').value;
+    if(!token) return alert('ضع التوكن أولاً!');
+    
+    const response = await fetch('https://YOUR-RENDER-SERVER.onrender.com/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+    });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// تشغيل البوت
-let botClient;
-app.post('/start-bot', (req, res) => {
-  const token = req.body.token;
-  if(!token) return res.json({message:"ضع توكن البوت!"});
-
-  botClient = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
-  botClient.once('ready', () => console.log(`بوت شغال: ${botClient.user.tag}`));
-  
-  botClient.on('messageCreate', message => {
-    if(message.content === "!ping") message.channel.send("Pong!");
-  });
-
-  botClient.login(token)
-    .then(()=> res.json({message:"البوت شغّل!"}))
-    .catch(()=> res.json({message:"توكن غير صحيح!"}));
-});
-
-// تشغيل أكواد JS مباشرة
-app.post('/run-code', (req, res) => {
-  try{
-    eval(req.body.code);
-    res.json({message:"تم تشغيل الكود!"});
-  } catch(e){
-    res.json({message:"خطأ: "+e.message});
-  }
-});
-
-app.listen(process.env.PORT || 3000, () => console.log("Server running"));
+    const data = await response.json();
+    alert(data.message);
+}
+</script>
+</body>
+</html>
