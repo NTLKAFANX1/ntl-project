@@ -3,71 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Discord Bot Manager</title>
-<style>
-body { font-family: Arial; background:#121212; color:#fff; }
-header { display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #444; }
-.bot-list { margin-top:20px; }
-.bot-item { background:#1e1e1e; padding:10px; margin:10px 0; display:flex; justify-content:space-between; align-items:center; border-radius:5px; }
-button { padding:5px 10px; border:none; border-radius:5px; cursor:pointer; background:#3a3a3a; color:#fff; }
-button:hover { background:#555; }
-</style>
+<title>Bot Manager</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+<h1>Bot Manager</h1>
 
-<header>
-    <h1>Discord Bots</h1>
-    <button onclick="showAddBot()">+ Add Bot</button>
-</header>
+<form id="add-bot-form">
+  <input type="text" id="bot-name" placeholder="Bot Name" required>
+  <input type="text" id="bot-token" placeholder="Bot Token" required>
+  <button type="submit">Add Bot</button>
+</form>
 
-<div class="bot-list" id="botList"></div>
+<ul id="bot-list"></ul>
 
-<div id="addBotModal" style="display:none; padding:20px; background:#222; margin:20px;">
-    <input type="text" id="botName" placeholder="Bot Name"><br><br>
-    <input type="text" id="botToken" placeholder="Bot Token"><br><br>
-    <button onclick="addBot()">Add Bot</button>
-    <button onclick="hideAddBot()">Cancel</button>
-</div>
-
-<script>
-function showAddBot(){ document.getElementById("addBotModal").style.display = "block"; }
-function hideAddBot(){ document.getElementById("addBotModal").style.display = "none"; }
-
-function addBot(){
-    const name = document.getElementById("botName").value;
-    const token = document.getElementById("botToken").value;
-
-    fetch("/add-bot", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({name, token})})
-    .then(res => res.json())
-    .then(data => {
-        if(data.success){
-            hideAddBot();
-            loadBots();
-        } else alert("Error: " + JSON.stringify(data));
-    });
-}
-
-function loadBots(){
-    const botList = document.getElementById("botList");
-    botList.innerHTML = "";
-    fetch("/bots.json") // ممكن نعمل endpoint يرسل أسماء البوتات
-    .then(res => res.json())
-    .then(bots => {
-        for(const name in bots){
-            const div = document.createElement("div");
-            div.className = "bot-item";
-            div.innerHTML = `<span>${name}</span>
-            <button onclick="openBot('${name}')">Open</button>`;
-            botList.appendChild(div);
-        }
-    });
-}
-
-function openBot(name){
-    window.location.href = `bot.html?name=${name}`;
-}
-
-loadBots();
-</script>
+<script src="main.js"></script>
 </body>
 </html>
