@@ -3,125 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>موقع بوت + AI خارجي</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-body{margin:0;font-family:'Roboto',sans-serif;background:linear-gradient(135deg,#1a1a1a,#121212);color:#fff;overflow-x:hidden;}
-header{background:linear-gradient(90deg,#ff4e50,#f9d423);padding:20px;text-align:center;font-size:2em;font-weight:bold;animation:pulse 3s infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.7;}}
-nav{display:flex;justify-content:center;margin:20px 0;gap:10px;}
-nav button{background:rgba(255,255,255,0.1);border:none;padding:10px 20px;color:#fff;font-weight:bold;cursor:pointer;border-radius:10px;transition:all 0.3s ease;}
-nav button:hover{background:linear-gradient(90deg,#ff4e50,#f9d423);color:#000;transform:scale(1.1);}
-section{display:none;padding:20px;animation:fadeIn 0.7s forwards;}
-section.active{display:block;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
-textarea,input{width:100%;background:#222;color:#fff;border:none;padding:10px;border-radius:10px;font-family:monospace;font-size:1em;}
-textarea{height:200px;margin-bottom:10px;}
-button.run,button.send{padding:10px 20px;border-radius:10px;border:none;cursor:pointer;background:linear-gradient(90deg,#4ecca3,#1f8a70);color:#fff;font-weight:bold;transition:all 0.3s ease;}
-button.run:hover,button.send:hover{transform:scale(1.05);}
-.toast{position:fixed;bottom:20px;right:20px;background:#333;padding:15px 25px;border-radius:10px;opacity:0;color:#fff;font-weight:bold;transition:opacity 0.5s ease;}
-.toast.show{opacity:1;}
-#aiChat{max-height:300px;overflow-y:auto;background:#111;padding:10px;border-radius:10px;margin-bottom:10px;}
-.message{margin:5px 0;}
-.user{color:#4ecca3;}
-.ai{color:#f9d423;}
-</style>
+<title>بوت مباشر</title>
 </head>
 <body>
 
-<header>موقع بوت + AI خارجي</header>
+<h2>تشغيل البوت</h2>
+<input type="text" id="botToken" placeholder="توكن البوت">
+<button onclick="startBot()">تشغيل البوت</button>
+<div id="botStatus"></div>
 
-<nav>
-<button onclick="showSection('home')">الرئيسية</button>
-<button onclick="showSection('editor')">محرر البوت</button>
-<button onclick="showSection('ai')">AI مساعد</button>
-<button onclick="showSection('settings')">الإعدادات</button>
-</nav>
+<h2>تشغيل كود JS</h2>
+<textarea id="codeArea">// ضع كود JS هنا</textarea>
+<button onclick="runCode()">تشغيل الكود</button>
+<div id="codeStatus"></div>
 
-<section id="home" class="active">
-<h2>مرحبا بك</h2>
-<p>تحكم بالبوت وبرمجته، وتحدث مع AI خارجي لإنتاج أكواد ونصائح مباشرة.</p>
-</section>
-
-<section id="editor">
-<h2>محرر البوت</h2>
-<h3>توكن البوت</h3>
-<input type="text" id="botToken" placeholder="ضع توكن البوت هنا">
-<button class="run" onclick="runBot()">تشغيل البوت</button>
-<textarea id="codeArea">// ضع كود البوت هنا</textarea>
-<button class="run" onclick="runCode()">تشغيل الكود</button>
-</section>
-
-<section id="ai">
-<h2>AI مساعد</h2>
-<div id="aiChat"></div>
-<input type="text" id="userInput" placeholder="اكتب سؤالك أو طلبك للـ AI">
-<button class="send" onclick="sendMessage()">إرسال</button>
-</section>
-
-<section id="settings">
-<h2>الإعدادات</h2>
-<p>اضبط إعدادات البوت والواجهة هنا.</p>
-</section>
-
-<div class="toast" id="toast">تم التنفيذ!</div>
+<h2>رفع ملفات البوت</h2>
+<input type="file" id="botFile">
+<button onclick="uploadFile()">رفع الملف</button>
+<div id="uploadStatus"></div>
 
 <script>
-function showSection(id){
-  document.querySelectorAll('section').forEach(sec => sec.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+function startBot(){
+  const token = document.getElementById('botToken').value.trim();
+  fetch('/start-bot',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({token})
+  }).then(r=>r.json()).then(d=> document.getElementById('botStatus').innerText = d.message);
 }
 
 function runCode(){
   const code = document.getElementById('codeArea').value;
-  try{ eval(code); showToast("تم تشغيل الكود بنجاح!"); }
-  catch(e){ showToast("خطأ: " + e.message); }
+  fetch('/run-code',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({code})
+  }).then(r=>r.json()).then(d=> document.getElementById('codeStatus').innerText=d.message);
 }
 
-function showToast(msg){
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(()=>toast.classList.remove('show'),3000);
-}
-
-// AI خارجي
-async function sendMessage(){
-  const input=document.getElementById('userInput').value.trim();
-  if(!input) return;
-  const chat=document.getElementById('aiChat');
-  const userMsg=document.createElement('div'); userMsg.className='message user';
-  userMsg.textContent='أنت: '+input;
-  chat.appendChild(userMsg);
-
-  const aiMsg=document.createElement('div'); aiMsg.className='message ai';
-  try{
-    const res=await fetch('/ask',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({prompt:input})
-    });
-    const data=await res.json();
-    aiMsg.textContent='AI: '+data.response;
-  }catch(e){ aiMsg.textContent='AI: حدث خطأ'; }
-
-  chat.appendChild(aiMsg);
-  chat.scrollTop=chat.scrollHeight;
-  document.getElementById('userInput').value='';
-}
-
-// تشغيل البوت
-function runBot(){
-  const token = document.getElementById('botToken').value.trim();
-  if(!token) return showToast("ضع توكن البوت أولاً");
-
-  fetch('/start-bot', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({token})
-  }).then(res => res.json())
-    .then(data => showToast(data.message))
-    .catch(()=> showToast("حدث خطأ عند تشغيل البوت"));
+function uploadFile(){
+  const file = document.getElementById('botFile').files[0];
+  if(!file) return;
+  const formData = new FormData();
+  formData.append('file', file);
+  fetch('/upload',{method:'POST', body: formData})
+    .then(r=>r.json())
+    .then(d=> document.getElementById('uploadStatus').innerText = d.message);
 }
 </script>
 
