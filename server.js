@@ -55,7 +55,7 @@ app.post('/run', (req, res) => {
   });
 });
 
-// واجهة OpenAI باستخدام الطريقة الجديدة
+// واجهة OpenAI باستخدام الطريقة الجديدة بدون Configuration
 app.post('/ask', async (req, res) => {
   const { question } = req.body;
   try {
@@ -74,3 +74,4 @@ app.post('/ask', async (req, res) => {
 app.listen(process.env.PORT || 3000, () => {
   console.log('🚀 Server running...');
 });
+      
