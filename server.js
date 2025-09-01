@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require('openai');
 
 const app = express();
 app.use(express.json());
@@ -55,16 +55,16 @@ app.post('/run', (req, res) => {
   });
 });
 
-// واجهة OpenAI (اختياري)
+// واجهة OpenAI باستخدام الطريقة الجديدة
 app.post('/ask', async (req, res) => {
   const { question } = req.body;
   try {
-    const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
-    const completion = await openai.createChatCompletion({
-      model: 'gpt-4',
-      messages: [{ role: 'user', content: question }]
+    const clientAI = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const response = await clientAI.responses.create({
+      model: 'gpt-5',
+      input: question
     });
-    res.json({ answer: completion.data.choices[0].message.content });
+    res.json({ answer: response.output_text || '❌ لم يتم الرد' });
   } catch (err) {
     console.error(err);
     res.json({ answer: '❌ فشل في الاتصال بـ OpenAI، تأكد من المفتاح.' });
