@@ -1,66 +1,84 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>تشغيل وبرمجة بوت Discord</title>
+  <title>AI بوت مبرمج ذكي</title>
   <style>
-    body { font-family: sans-serif; background:#111; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; }
-    input, select, textarea { padding:10px; width:300px; margin:10px; border-radius:5px; border:none; }
-    button { padding:10px 20px; border:none; border-radius:5px; background:#00ff99; color:#000; cursor:pointer; }
-    textarea { height: 100px; }
+    body { background-color: #111; color: #fff; font-family: sans-serif; padding: 20px; }
+    #chat { max-width: 800px; margin: auto; margin-bottom: 30px; }
+    .msg { margin: 10px 0; padding: 10px; border-radius: 5px; }
+    .user { background-color: #333; text-align: right; }
+    .bot { background-color: #222; text-align: left; white-space: pre-wrap; }
+    input, button, select, textarea { padding: 10px; border-radius: 5px; border: none; margin-top: 10px; width: 100%; box-sizing: border-box; }
+    button { background-color: #00ff99; color: #000; cursor: pointer; margin-bottom: 10px; }
+    textarea { height: 150px; background: #222; color: #0f0; font-family: monospace; }
   </style>
 </head>
 <body>
-  <h1>تشغيل وبرمجة بوت Discord</h1>
-  <input type="text" id="token" placeholder="توكن البوت">
-  <select id="status">
-    <option value="online">🟢 متصل</option>
-    <option value="idle">🌙 غير متاح</option>
-    <option value="dnd">⛔ عدم الإزعاج</option>
-    <option value="invisible">غير مرئي</option>
-  </select>
-  <input type="text" id="activity" placeholder="النشاط (مثلاً: يلعب Minecraft)">
-  <button onclick="startBot()">تشغيل البوت</button>
+  <div id="chat">
+    <div class="msg bot">🤖 أهلاً بك في مساعدك الذكي! اسأل عن أي كود أو عدّل أي ملف في البوت.</div>
+  </div>
+  <input type="text" id="input" placeholder="اكتب سؤالك أو التعديل المطلوب...">
+  <button onclick="send()">إرسال</button>
 
-  <hr style="width: 80%; margin: 20px 0; border: 1px solid #333;">
-
-  <h2>تحديث الحالة أثناء التشغيل</h2>
-  <select id="newStatus">
-    <option value="online">🟢 متصل</option>
-    <option value="idle">🌙 غير متاح</option>
-    <option value="dnd">⛔ عدم الإزعاج</option>
-    <option value="invisible">غير مرئي</option>
+  <h3>📂 ملفات البوت:</h3>
+  <select id="fileSelect" onchange="loadFile()">
+    <option value="">-- اختر ملف --</option>
+    <option value="server.js">server.js</option>
+    <option value="package.json">package.json</option>
+    <option value="public/index.html">public/index.html</option>
   </select>
-  <input type="text" id="newActivity" placeholder="نشاط جديد">
-  <button onclick="updateStatus()">تحديث الحالة</button>
+  <textarea id="fileContent" placeholder="محتوى الملف سيظهر هنا..."></textarea>
+  <button onclick="saveFile()">💾 حفظ التعديلات</button>
 
   <script>
-    async function startBot() {
-        const token = document.getElementById('token').value;
-        const status = document.getElementById('status').value;
-        const activity = document.getElementById('activity').value;
-        if(!token) return alert('ضع التوكن أولاً!');
-        
-        const response = await fetch('/start', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token, status, activity })
-        });
+    async function send() {
+      const input = document.getElementById('input');
+      const chat = document.getElementById('chat');
+      const text = input.value;
+      if (!text) return;
 
-        const data = await response.json();
-        alert(data.message);
+      const userMsg = document.createElement('div');
+      userMsg.className = 'msg user';
+      userMsg.innerText = '🧑‍💻 ' + text;
+      chat.appendChild(userMsg);
+      input.value = '';
+
+      const response = await fetch('/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: text })
+      });
+      const data = await response.json();
+
+      const botMsg = document.createElement('div');
+      botMsg.className = 'msg bot';
+      botMsg.innerText = '🤖 ' + data.message;
+      chat.appendChild(botMsg);
+
+      chat.scrollTop = chat.scrollHeight;
     }
 
-    async function updateStatus() {
-        const status = document.getElementById('newStatus').value;
-        const activity = document.getElementById('newActivity').value;
-        const response = await fetch('/status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status, activity })
-        });
-        const data = await response.json();
-        alert(data.message);
+    async function loadFile() {
+      const file = document.getElementById('fileSelect').value;
+      if (!file) return;
+      const res = await fetch(`/file?name=${file}`);
+      const data = await res.text();
+      document.getElementById('fileContent').value = data;
+    }
+
+    async function saveFile() {
+      const file = document.getElementById('fileSelect').value;
+      const content = document.getElementById('fileContent').value;
+      if (!file) return alert('اختر ملف أولاً!');
+      const res = await fetch('/file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: file, content })
+      });
+      const data = await res.json();
+      alert(data.message);
     }
   </script>
 </body>
